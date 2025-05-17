@@ -1,0 +1,21 @@
+[project]
+name = "scaffolder"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "utkarshg1", email = "gaikwadujg@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "aiofiles>=24.1.0",
+    "pyyaml>=6.0.2",
+    "typer>=0.15.4",
+]
+
+[project.scripts]
+scaffolder = "scaffolder.main:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

@@ -1,0 +1,7 @@
+root:
+  file1.txt: "Hello from file1"
+  dir1:
+    file2.txt: "Nested content"
+    subdir:
+      file3.txt: "Deeply nested!"
+  emptydir: null
