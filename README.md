@@ -15,14 +15,14 @@ A command-line tool to generate folder and file structures from YAML templates.
 ## Installation
 
 ```bash
-pip install scaffolder
+pip install scfldr
 ```
 
 Or install from source:
 
 ```bash
-git clone https://github.com/yourusername/scaffolder.git
-cd scaffolder
+git clone https://github.com/yourusername/scfldr.git
+cd scfldr
 pip install -e .
 ```
 
