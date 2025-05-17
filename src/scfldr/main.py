@@ -11,6 +11,48 @@ import sys
 # Initialize console for rich output
 console = Console()
 
+# Predefined template examples
+EXAMPLE_TEMPLATES = {
+    "basic": {
+        "src": {
+            "main.py": 'def main():\n    print("Hello, world!")\n\nif __name__ == "__main__":\n    main()',
+            "utils": {"helpers.py": "def add(a, b):\n    return a + b"},
+        },
+        "docs": {"README.md": "# My Project\n\nThis is a sample project."},
+        "tests": {"test_main.py": "def test_sample():\n    assert True"},
+    },
+    "web": {
+        "app": {
+            "static": {
+                "css": {
+                    "style.css": "body {\n    font-family: Arial, sans-serif;\n    margin: 0;\n    padding: 20px;\n}"
+                },
+                "js": {
+                    "main.js": "document.addEventListener('DOMContentLoaded', function() {\n    console.log('Page loaded');\n});"
+                },
+            },
+            "templates": {
+                "index.html": '<!DOCTYPE html>\n<html>\n<head>\n    <title>My Web App</title>\n    <link rel="stylesheet" href="/static/css/style.css">\n</head>\n<body>\n    <h1>Hello, World!</h1>\n    <script src="/static/js/main.js"></script>\n</body>\n</html>'
+            },
+            "app.py": "from flask import Flask, render_template\n\napp = Flask(__name__)\n\n@app.route('/')\ndef home():\n    return render_template('index.html')\n\nif __name__ == '__main__':\n    app.run(debug=True)",
+        },
+        "requirements.txt": "flask==2.0.1\nWerkzeug==2.0.1",
+        "README.md": "# Web Application\n\nA simple Flask web application.\n\n## Setup\n\n```bash\npip install -r requirements.txt\npython app/app.py\n```",
+    },
+    "python_package": {
+        "mypackage": {
+            "__init__.py": "# My Package\n__version__ = '0.1.0'",
+            "core.py": 'def main():\n    print("Package functionality here")',
+        },
+        "tests": {
+            "__init__.py": "",
+            "test_core.py": "import unittest\nfrom mypackage.core import main\n\nclass TestCore(unittest.TestCase):\n    def test_main(self):\n        # Add your test here\n        pass",
+        },
+        "setup.py": 'from setuptools import setup, find_packages\n\nsetup(\n    name="mypackage",\n    version="0.1.0",\n    packages=find_packages(),\n    install_requires=[\n        # dependencies here\n    ],\n)',
+        "README.md": "# My Package\n\nA Python package template.\n\n## Installation\n\n```bash\npip install .\n```",
+    },
+}
+
 # Initialize Typer app
 app = typer.Typer(help="Generate folder/file structure from a YAML template.")
 
@@ -230,6 +272,104 @@ def show_structure(
     console.print("[bold]Directory structure:[/]")
     tree = preview_tree(Path("."), template_content)
     console.print(tree)
+
+
+@app.command()
+def create_template_file(
+    template_name: str = typer.Argument(
+        ...,
+        help="Name of the template to create (e.g., 'basic', 'web', 'python_package')",
+    ),
+    output_path: Path = typer.Option(
+        Path("template.yaml"), help="Output path for the YAML template file."
+    ),
+):
+    """
+    Create a YAML template file from predefined examples.
+
+    Args:
+        template_name: Name of the template to create
+        output_path: Output path for the YAML template file
+    """
+    template_name = template_name.lower()
+
+    if template_name not in EXAMPLE_TEMPLATES:
+        console.print(f"[bold red]Error:[/] Template '{template_name}' not found.")
+        console.print(f"Available templates: {', '.join(EXAMPLE_TEMPLATES.keys())}")
+        raise typer.Exit(code=1)
+
+    # Convert the template to YAML format
+    template_content = yaml.dump(EXAMPLE_TEMPLATES[template_name], sort_keys=False)
+
+    # Write to the output file
+    with open(output_path, "w", encoding="utf-8") as file:
+        file.write(template_content)
+
+    console.print(f"[bold green]Template file created:[/] {output_path}")
+
+
+@app.command()
+def create_example(
+    output: Path = typer.Option(
+        Path("template.yaml"), help="Path to save the example template."
+    ),
+    template_type: str = typer.Option(
+        "basic",
+        "--type",
+        "-t",
+        help="Type of template to generate (basic, web, python_package).",
+    ),
+    force: bool = typer.Option(
+        False, "--force", "-f", help="Overwrite existing file if it exists."
+    ),
+):
+    """
+    Generate an example YAML template file.
+
+    Args:
+        output: Path where to save the example template
+        template_type: Type of template to generate (basic, web, python_package)
+        force: Whether to overwrite the output file if it exists
+    """
+    # Check if output file exists
+    if output.exists() and not force:
+        console.print(f"[bold yellow]Warning:[/] Output file {output} already exists.")
+        if not typer.confirm("Overwrite existing file?"):
+            console.print("Operation cancelled.")
+            return
+
+    # Check if selected template type exists
+    if template_type not in EXAMPLE_TEMPLATES:
+        console.print(
+            f"[bold red]Error:[/] Unknown template type: {template_type}. "
+            f"Available types: {', '.join(EXAMPLE_TEMPLATES.keys())}"
+        )
+        return 1
+
+    # Get the template content
+    template_content = EXAMPLE_TEMPLATES[template_type]
+
+    # Write to file
+    try:
+        with open(output, "w", encoding="utf-8") as file:
+            yaml.dump(template_content, file, default_flow_style=False, sort_keys=False)
+
+        console.print(
+            f"[bold green]Success![/] Example template generated at: {output.resolve()}"
+        )
+
+        # Preview the template        console.print("\n[bold]Template structure preview:[/]")
+        tree = preview_tree(Path("."), template_content)
+        console.print(tree)
+
+        console.print(f"\nUse it with: [bold]scfldr generate-structure[/]")
+
+    except PermissionError:
+        console.print(f"[bold red]Error:[/] Permission denied when creating {output}")
+        return 1
+    except Exception as e:
+        console.print(f"[bold red]Error:[/] Failed to create example template: {e}")
+        return 1
 
 
 if __name__ == "__main__":
