@@ -214,7 +214,9 @@ def preview_tree(path: Path, template: Dict[str, Any], parent: Tree = None) -> T
 
 @app.command()
 def show_structure(
-    template: Path = typer.Option(..., help="Path to the YAML template."),
+    template: Path = typer.Option(
+        Path("template.yaml"), help="Path to the YAML template."
+    ),
 ):
     """
     CLI entrypoint: displays the directory structure from the YAML template.

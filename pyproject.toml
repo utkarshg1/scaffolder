@@ -1,5 +1,5 @@
 [project]
-name = "scaffolder"
+name = "scfldr"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [project.scripts]
-scaffolder = "scaffolder.main:app"
+scfldr = "scfldr.main:app"
 
 [build-system]
 requires = ["hatchling"]
