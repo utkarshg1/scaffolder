@@ -196,15 +196,29 @@ def generate_structure(
         template: Path to the YAML template file
         output: Output directory where the structure will be generated
         force: Whether to overwrite the output directory if it exists
-    """
-    # Check if output directory exists and is not empty
+    """  # Check if output directory exists and is not empty
     if output.exists() and any(output.iterdir()) and not force:
-        console.print(
-            f"[bold yellow]Warning:[/] Output directory {output} already exists and is not empty."
-        )
-        if not typer.confirm("Continue and potentially overwrite existing files?"):
-            console.print("Operation cancelled.")
-            return
+        # Check if the output directory is default (.) and only contains YAML files
+        is_default_with_yaml_only = False
+        if output == Path("."):
+            yaml_files_only = all(
+                f.is_file() and f.suffix.lower() in [".yaml", ".yml"]
+                for f in output.iterdir()
+                if f.is_file()
+            )
+            is_default_with_yaml_only = yaml_files_only
+
+        if is_default_with_yaml_only:
+            console.print(
+                f"[bold blue]Info:[/] Proceeding with default directory containing only YAML files."
+            )
+        else:
+            console.print(
+                f"[bold yellow]Warning:[/] Output directory {output} already exists and is not empty."
+            )
+            if not typer.confirm("Continue and potentially overwrite existing files?"):
+                console.print("Operation cancelled.")
+                return
 
     # Create output directory if it doesn't exist
     output.mkdir(parents=True, exist_ok=True)
