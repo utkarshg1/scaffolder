@@ -5,3 +5,11 @@ root:
     subdir:
       file3.txt: "Deeply nested!"
   emptydir: null
+
+test:
+  .streamlit:
+    secrets.toml: |
+      # Add API key here
+      API_KEY = "YOUR_API_KEY"
+  notebook.ipynb: null
+  utils.py: null
