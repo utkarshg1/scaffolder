@@ -21,7 +21,7 @@ pip install scfldr
 Or install from source:
 
 ```bash
-git clone https://github.com/yourusername/scfldr.git
+git clone https://github.com/utkarshg1/scfldr.git
 cd scfldr
 pip install -e .
 ```
