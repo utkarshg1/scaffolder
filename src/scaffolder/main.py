@@ -3,6 +3,7 @@ import yaml
 import typer
 from pathlib import Path
 from rich.console import Console
+from rich.tree import Tree
 import aiofiles
 from typing import Dict, Any, Optional
 import sys
@@ -107,9 +108,40 @@ async def generate(template_path: Path, output: Path) -> None:
     await asyncio.gather(*tasks)
 
 
+def display_tree(path: Path, parent: Tree = None) -> Tree:
+    """
+    Generate a rich Tree representation of the directory structure.
+
+    Args:
+        path: Path to the root directory to display
+        parent: Parent tree node (used for recursion)
+
+    Returns:
+        Tree: A Rich Tree object representing the directory structure
+    """
+    if parent is None:
+        parent = Tree(f"[bold blue]{path.name}[/]", guide_style="bold bright_blue")
+
+    # Sort paths - directories first, then files
+    paths = sorted(path.iterdir(), key=lambda p: (not p.is_dir(), p.name.lower()))
+
+    for item in paths:
+        if item.is_dir():
+            # Add directory with a bold blue style
+            branch = parent.add(f"[bold blue]{item.name}[/]")
+            display_tree(item, branch)
+        else:
+            # Add file with a green style
+            parent.add(f"[green]{item.name}[/]")
+
+    return parent
+
+
 @app.command()
 def generate_structure(
-    template: Path = typer.Option(..., help="Path to the YAML template."),
+    template: Path = typer.Option(
+        Path("template.yaml"), help="Path to the YAML template."
+    ),
     output: Path = typer.Option(Path("./output"), help="Output directory root."),
     force: bool = typer.Option(
         False, "--force", "-f", help="Overwrite existing output directory if it exists."
@@ -140,11 +172,62 @@ def generate_structure(
         console.print(
             f"[bold green]Success![/] Structure generated at: {output.resolve()}"
         )
+
+        # Display the directory tree structure
+        console.print("\n[bold]Directory Structure:[/]")
+        tree = display_tree(output)
+        console.print(tree)
+
     except KeyboardInterrupt:
         console.print("\n[yellow]Operation cancelled by user.[/]")
     except Exception as e:
         console.print(f"[bold red]Error:[/] {e}")
         return 1
+
+
+def preview_tree(path: Path, template: Dict[str, Any], parent: Tree = None) -> Tree:
+    """
+    Recursively preview the directory structure as a tree from a template.
+
+    Args:
+        path: Current directory path
+        template: Current level template content
+        parent: Parent tree node
+
+    Returns:
+        The tree node representing the current directory level
+    """
+    if parent is None:
+        parent = Tree(path.name, guide_style="bold bright_blue")
+
+    for name, content in template.items():
+        if isinstance(content, dict):
+            # Recursive case: directory
+            node = parent.add(f"[blue]{name}[/]", guide_style="bold blue")
+            preview_tree(path / name, content, node)
+        else:
+            # Base case: file
+            parent.add(f"[green]{name}[/]")
+
+    return parent
+
+
+@app.command()
+def show_structure(
+    template: Path = typer.Option(..., help="Path to the YAML template."),
+):
+    """
+    CLI entrypoint: displays the directory structure from the YAML template.
+
+    Args:
+        template: Path to the YAML template file
+    """
+    console.print(f"[bold]Loading template:[/] {template}")
+    template_content = load_template(template)
+
+    console.print("[bold]Directory structure:[/]")
+    tree = preview_tree(Path("."), template_content)
+    console.print(tree)
 
 
 if __name__ == "__main__":
