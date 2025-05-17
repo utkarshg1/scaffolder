@@ -174,12 +174,6 @@ scfldr create-template-file python_package --output-path package_template.yaml
   - aiofiles
   - rich
 
-### Running Tests
-
-```bash
-pytest
-```
-
 ## License
 
 MIT
