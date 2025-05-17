@@ -5,7 +5,7 @@ from pathlib import Path
 from rich.console import Console
 from rich.tree import Tree
 import aiofiles
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 import sys
 
 # Initialize console for rich output
@@ -184,7 +184,7 @@ def generate_structure(
     template: Path = typer.Option(
         Path("template.yaml"), help="Path to the YAML template."
     ),
-    output: Path = typer.Option(Path("./output"), help="Output directory root."),
+    output: Path = typer.Option(Path("."), help="Output directory root."),
     force: bool = typer.Option(
         False, "--force", "-f", help="Overwrite existing output directory if it exists."
     ),
