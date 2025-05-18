@@ -46,11 +46,25 @@ src:
       def add(a, b):
           return a + b
 docs:
-  README.md: "# My Project\n\nThis is a sample project."
+  README.md: |
+    # My Project
+
+    This is a sample project.
 tests:
   test_main.py: |
     def test_sample():
         assert True
+# Example with append mode
+logs:
+  app.log: # Standard write mode (overwrites if file exists)
+    content: |
+      # Log file initialized
+      # App started
+  error.log: # Append mode (adds content if file exists)
+    content: |
+      # Error log entry
+      # Will be appended if the file exists
+    mode: a
 ```
 
 Then generate your project structure:
@@ -118,10 +132,14 @@ The YAML template follows a simple structure:
 - Keys represent directory or file names
 - Values represent:
   - For directories: A nested dictionary defining child entities
-  - For files: String content (can be multiline using YAML's `|` syntax)
+  - For files:
+    - String content (can be multiline using YAML's `|` syntax)
+    - OR a dictionary with `content` and optional `mode` keys
+      - `mode: a` to append content to an existing file
+      - `mode: w` (default) to create or overwrite a file
   - For empty directories: An empty dictionary `{}`
 
-### Example:
+### Examples:
 
 ```yaml
 # Basic structure
@@ -132,6 +150,21 @@ project:
           print("Hello, world!")
     utils: {} # Empty directory
   README.md: "# Project Title"
+```
+
+```yaml
+# Structure with append mode
+project:
+  src:
+    main.py: |
+      def main():
+          print("Hello, world!")
+  logs:
+    app.log: # Standard write mode (default)
+      content: "Log entry"
+    error.log: # Append mode
+      content: "Error message"
+      mode: a # 'a' for append, 'w' for write (default)
 ```
 
 ## Predefined Templates

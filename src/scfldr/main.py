@@ -15,46 +15,151 @@ console = Console()
 EXAMPLE_TEMPLATES = {
     "basic": {
         "src": {
-            "main.py": 'def main():\n    print("Hello, world!")\n\nif __name__ == "__main__":\n    main()',
-            "utils": {"helpers.py": "def add(a, b):\n    return a + b"},
+            "main.py": {
+                "content": """def main():
+    print("Hello, world!")
+
+if __name__ == "__main__":
+    main()""",
+                "mode": "w",
+            },
+            "utils": {
+                "helpers.py": """def add(a, b):
+    return a + b"""
+            },
         },
-        "docs": {"README.md": "# My Project\n\nThis is a sample project."},
-        "tests": {"test_main.py": "def test_sample():\n    assert True"},
+        "docs": {
+            "README.md": """# My Project
+
+This is a sample project."""
+        },
+        "tests": {
+            "test_main.py": """def test_sample():
+    assert True"""
+        },
+        "logs": {
+            "app.log": {
+                "content": """# Log file initialized
+# Append mode example
+""",
+                "mode": "a",
+            }
+        },
     },
     "web": {
         "app": {
             "static": {
                 "css": {
-                    "style.css": "body {\n    font-family: Arial, sans-serif;\n    margin: 0;\n    padding: 20px;\n}"
+                    "style.css": """body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+}"""
                 },
                 "js": {
-                    "main.js": "document.addEventListener('DOMContentLoaded', function() {\n    console.log('Page loaded');\n});"
+                    "main.js": """document.addEventListener('DOMContentLoaded', function() {
+    console.log('Page loaded');
+});"""
                 },
             },
             "templates": {
-                "index.html": '<!DOCTYPE html>\n<html>\n<head>\n    <title>My Web App</title>\n    <link rel="stylesheet" href="/static/css/style.css">\n</head>\n<body>\n    <h1>Hello, World!</h1>\n    <script src="/static/js/main.js"></script>\n</body>\n</html>'
+                "index.html": """<!DOCTYPE html>
+<html>
+<head>
+    <title>My Web App</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <h1>Hello, World!</h1>
+    <script src="/static/js/main.js"></script>
+</body>
+</html>"""
             },
-            "app.py": "from flask import Flask, render_template\n\napp = Flask(__name__)\n\n@app.route('/')\ndef home():\n    return render_template('index.html')\n\nif __name__ == '__main__':\n    app.run(debug=True)",
+            "app.py": """from flask import Flask, render_template
+
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return render_template('index.html')
+
+if __name__ == '__main__':
+    app.run(debug=True)""",
         },
-        "requirements.txt": "flask==2.0.1\nWerkzeug==2.0.1",
-        "README.md": "# Web Application\n\nA simple Flask web application.\n\n## Setup\n\n```bash\npip install -r requirements.txt\npython app/app.py\n```",
+        "requirements.txt": """flask==2.0.1
+Werkzeug==2.0.1""",
+        "README.md": """# Web Application
+
+A simple Flask web application.
+
+## Setup
+
+```bash
+pip install -r requirements.txt
+python app/app.py
+```""",
+        "logs": {
+            "server.log": {
+                "content": """# Server log initialized
+# This log file will be appended to if it exists
+""",
+                "mode": "a",
+            }
+        },
     },
     "python_package": {
         "mypackage": {
-            "__init__.py": "# My Package\n__version__ = '0.1.0'",
-            "core.py": 'def main():\n    print("Package functionality here")',
+            "__init__.py": """# My Package
+__version__ = '0.1.0'""",
+            "core.py": """def main():
+    print("Package functionality here")""",
         },
         "tests": {
             "__init__.py": "",
-            "test_core.py": "import unittest\nfrom mypackage.core import main\n\nclass TestCore(unittest.TestCase):\n    def test_main(self):\n        # Add your test here\n        pass",
+            "test_core.py": """import unittest
+from mypackage.core import main
+
+class TestCore(unittest.TestCase):
+    def test_main(self):
+        # Add your test here
+        pass""",
         },
-        "setup.py": 'from setuptools import setup, find_packages\n\nsetup(\n    name="mypackage",\n    version="0.1.0",\n    packages=find_packages(),\n    install_requires=[\n        # dependencies here\n    ],\n)',
-        "README.md": "# My Package\n\nA Python package template.\n\n## Installation\n\n```bash\npip install .\n```",
+        "setup.py": """from setuptools import setup, find_packages
+
+setup(
+    name="mypackage",
+    version="0.1.0",
+    packages=find_packages(),
+    install_requires=[
+        # dependencies here
+    ],
+)""",
+        "README.md": """# My Package
+
+A Python package template.
+
+## Installation
+
+```bash
+pip install .
+```""",
+        "CHANGELOG.md": {
+            "content": """# Changelog
+
+## v0.1.0 - YYYY-MM-DD
+
+* Initial release
+""",
+            "mode": "a",
+        },
     },
 }
 
 # Initialize Typer app
-app = typer.Typer(help="Generate folder/file structure from a YAML template.")
+app = typer.Typer(
+    help="Generate folder/file structure from a YAML template. "
+    "Files can be created in write mode (default) or append mode."
+)
 
 
 def load_template(path: Path) -> Dict[str, Any]:
@@ -96,11 +201,35 @@ async def create_entity(base: Path, name: str, content: Any) -> None:
         base: Base directory path
         name: Name of the entity to create
         content: Content definition (dict for directories, string for files)
+            - For files, content can be a string or a dictionary with 'content' and 'mode' keys
+            - 'mode' can be 'w' (write/overwrite) or 'a' (append)
     """
     target = base / name
 
     try:
-        if isinstance(content, dict):
+        if isinstance(content, dict) and ("content" in content and "mode" in content):
+            # Handle file with append/write mode specification
+            parent = target.parent
+            parent.mkdir(parents=True, exist_ok=True)
+
+            file_content = content.get("content", "")
+            file_mode = content.get("mode", "w")  # Default to write mode
+
+            if file_mode not in ("w", "a"):
+                console.print(
+                    f"[bold yellow]Warning:[/] Invalid mode '{file_mode}' for {target}. Using 'w' (write) mode."
+                )
+                file_mode = "w"
+
+            async with aiofiles.open(target, file_mode, encoding="utf-8") as file:
+                await file.write(file_content)
+
+            mode_desc = "Appended to" if file_mode == "a" else "Created"
+            console.print(f"[green]{mode_desc} file:[/] {target}")
+
+        elif isinstance(content, dict) and not (
+            "content" in content and "mode" in content
+        ):
             # Handle directory with children
             target.mkdir(parents=True, exist_ok=True)
             tasks = [
@@ -110,7 +239,7 @@ async def create_entity(base: Path, name: str, content: Any) -> None:
             await asyncio.gather(*tasks)
 
         elif target.suffix or isinstance(content, str):
-            # Handle file with content
+            # Handle file with content (traditional way)
             parent = target.parent
             parent.mkdir(parents=True, exist_ok=True)
             text = content or ""
@@ -312,8 +441,16 @@ def create_template_file(
         console.print(f"Available templates: {', '.join(EXAMPLE_TEMPLATES.keys())}")
         raise typer.Exit(code=1)
 
-    # Convert the template to YAML format
-    template_content = yaml.dump(EXAMPLE_TEMPLATES[template_name], sort_keys=False)
+    # Convert the template to YAML format with better formatting
+    template_content = yaml.dump(
+        EXAMPLE_TEMPLATES[template_name],
+        sort_keys=False,
+        default_style=None,
+        default_flow_style=False,
+        indent=2,
+        width=80,
+        allow_unicode=True,
+    )
 
     # Write to the output file
     with open(output_path, "w", encoding="utf-8") as file:
@@ -361,12 +498,18 @@ def create_example(
         return 1
 
     # Get the template content
-    template_content = EXAMPLE_TEMPLATES[template_type]
-
-    # Write to file
+    template_content = EXAMPLE_TEMPLATES[template_type]  # Write to file
     try:
         with open(output, "w", encoding="utf-8") as file:
-            yaml.dump(template_content, file, default_flow_style=False, sort_keys=False)
+            yaml.dump(
+                template_content,
+                file,
+                default_flow_style=False,
+                sort_keys=False,
+                indent=2,
+                width=80,
+                allow_unicode=True,
+            )
 
         console.print(
             f"[bold green]Success![/] Example template generated at: {output.resolve()}"
