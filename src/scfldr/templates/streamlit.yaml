@@ -1,0 +1,13 @@
+.streamlit:
+  secrets.toml: |
+    # Add your secrets here
+    API_KEY = "your_api_key_here"
+
+utils.py: |
+  # Add your utility functions here
+
+.gitignore:
+  content: |
+    # Streamlit secrets
+    .streamlit/
+  mode: a

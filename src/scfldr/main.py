@@ -13,7 +13,7 @@ import importlib.metadata
 console = Console()
 
 # Define the available template types based on the files in the templates folder
-EXAMPLE_TEMPLATE_TYPES = ["basic", "web", "python_package"]
+EXAMPLE_TEMPLATE_TYPES = ["basic", "web", "python_package", "streamlit"]
 
 
 def get_literal_style_dumper():
