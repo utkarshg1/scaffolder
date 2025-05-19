@@ -122,7 +122,7 @@ wheels = [
 
 [[package]]
 name = "scfldr"
-version = "0.1.6.dev1"
+version = "0.1.6"
 source = { editable = "." }
 dependencies = [
     { name = "aiofiles" },
