@@ -55,14 +55,46 @@ def load_template_from_file(template_name: str) -> Dict[str, Any]:
         FileNotFoundError: If the template file doesn't exist
         yaml.YAMLError: If the YAML format is invalid
     """
-    template_path = Path("src/scfldr/templates") / f"{template_name}.yaml"
+    template_filename = f"{template_name}.yaml"
 
-    if not template_path.exists():
-        console.print(
-            f"[bold red]Error:[/] Template '{template_name}' not found in templates folder."
-        )
-        sys.exit(1)
+    try:
+        # First try using importlib.resources (works for installed package and dev)
+        import importlib.resources
 
+        # Use different approach based on Python version
+        if hasattr(importlib.resources, "files"):  # Python 3.9+
+            from . import templates
+
+            template_file = importlib.resources.files(templates).joinpath(
+                template_filename
+            )
+            template_content = template_file.read_text(encoding="utf-8")
+        else:  # Python 3.7-3.8
+            template_content = importlib.resources.read_text(
+                "scfldr.templates", template_filename
+            )
+
+        template = yaml.safe_load(template_content)
+        if not isinstance(template, dict):
+            raise ValueError("Template must be a dictionary/object")
+        return template
+
+    except (ImportError, FileNotFoundError, ModuleNotFoundError) as e:
+        # Fallback to direct file paths
+        # First try relative to the module
+        template_path = Path(__file__).parent / "templates" / template_filename
+
+        if not template_path.exists():
+            # Then try relative to current directory (for development)
+            template_path = Path("src/scfldr/templates") / template_filename
+
+            if not template_path.exists():
+                console.print(
+                    f"[bold red]Error:[/] Template '{template_name}' not found in templates folder."
+                )
+                sys.exit(
+                    1
+                )  # At this point, template_path exists and we can try to load it
     try:
         with open(template_path, "r", encoding="utf-8") as file:
             template = yaml.safe_load(file)

@@ -1,6 +1,6 @@
 [project]
 name = "scfldr"
-version = "0.1.5"
+version = "0.1.6.dev1"
 description = "A command-line tool to generate folder and file structures from YAML templates"
 readme = "README.md"
 authors = [
