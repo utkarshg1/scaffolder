@@ -6,7 +6,7 @@ A command-line tool to generate folder and file structures from YAML templates.
 
 - 🚀 **Fast**: Uses asynchronous I/O for efficient file operations
 - 🛠️ **Simple**: Define your project structure in a simple YAML file
-- 🎨 **Visual**: Rich console output with color-coded status messages
+- 🎨 **Visual**: Rich console output with color-coded status messages and tree visualization
 - 🔄 **Non-destructive**: Asks for confirmation before overwriting existing files
 - 🧩 **Flexible**: Creates files with or without content, nested directories, and more
 - 📊 **Preview**: Visualize your project structure before generating it
@@ -73,6 +73,12 @@ Then generate your project structure:
 scfldr generate-structure --template template.yaml --output my_project
 ```
 
+The tool will:
+
+1. Ask for confirmation before overwriting existing files
+2. Display a colorful tree visualization of the generated structure
+3. Show real-time progress with color-coded status messages
+
 ### Creating Example Templates
 
 You can quickly create example template files:
@@ -83,12 +89,26 @@ scfldr create-example --type web --output web_template.yaml
 scfldr create-example --type python_package --output pkg_template.yaml
 ```
 
+You can also print the raw template content to the terminal for easy copying:
+
+```bash
+scfldr create-example --type basic --print-raw
+```
+
 ### Previewing Structure
 
-Preview the structure defined in your template without generating files:
+Preview the structure defined in your template without generating files. This will display a colorful tree visualization of the project structure:
 
 ```bash
 scfldr show-structure --template template.yaml
+```
+
+### Checking Version
+
+You can check the installed version of Scaffolder:
+
+```bash
+scfldr --version
 ```
 
 ### Command Line Options
@@ -106,23 +126,26 @@ Commands:
 
 Options:
   --help                 Show this message and exit
+  --version, -V         Show version and exit
 
 Generate Structure Options:
-  --template PATH        Path to the YAML template. [default: template.yaml]
-  --output PATH          Output directory root. [default: .]
-  --force / --no-force   Overwrite existing output directory if it exists.
+  --template PATH, -t PATH  Path to the YAML template. [default: template.yaml]
+  --output PATH, -o PATH    Output directory root. [default: .]
+  --force, -f / --no-force  Overwrite existing output directory if it exists.
 
 Show Structure Options:
-  --template PATH        Path to the YAML template. [default: template.yaml]
+  --template PATH, -t PATH  Path to the YAML template. [default: template.yaml]
 
 Create Template File Options:
   TEMPLATE_NAME          Name of the template to create (e.g., 'basic', 'web', 'python_package')
   --output-path PATH     Output path for the YAML template file. [default: template.yaml]
+  --print-raw, -p        Print raw template content to terminal for easy copying
 
 Create Example Options:
-  --output PATH          Path to save the example template. [default: template.yaml]
-  --type TEXT            Type of template to generate (basic, web, python_package). [default: basic]
-  --force / --no-force   Overwrite existing file if it exists.
+  --output PATH, -o PATH    Path to save the example template. [default: template.yaml]
+  --type TEXT               Type of template to generate (basic, web, python_package). [default: basic]
+  --force, -f / --no-force  Overwrite existing file if it exists.
+  --print-raw, -p           Print raw template content to terminal for easy copying
 ```
 
 ## YAML Template Format
@@ -130,6 +153,7 @@ Create Example Options:
 The YAML template follows a simple structure:
 
 - Keys represent directory or file names
+- Generated templates use literal style (`|`) for multiline strings to preserve formatting
 - Values represent:
   - For directories: A nested dictionary defining child entities
   - For files:
@@ -179,6 +203,12 @@ A simple project structure with source files, documentation, and tests.
 scfldr create-template-file basic --output-path basic_template.yaml
 ```
 
+You can also print the raw template content to the terminal:
+
+```bash
+scfldr create-template-file basic --print-raw
+```
+
 ### Web Template
 
 A Flask web application with static files, templates, and basic setup.
@@ -199,7 +229,7 @@ scfldr create-template-file python_package --output-path package_template.yaml
 
 ### Requirements
 
-- Python 3.7+
+- Python 3.10+
 - Dependencies:
   - typer
   - pyyaml

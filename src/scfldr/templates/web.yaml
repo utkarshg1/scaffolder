@@ -1,0 +1,58 @@
+app:
+  static:
+    css:
+      style.css: |
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+    js:
+      main.js: |
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Page loaded');
+        });
+  templates:
+    index.html: |
+      <!DOCTYPE html>
+      <html>
+      <head>
+          <title>My Web App</title>
+          <link rel="stylesheet" href="/static/css/style.css">
+      </head>
+      <body>
+          <h1>Hello, World!</h1>
+          <script src="/static/js/main.js"></script>
+      </body>
+      </html>
+  app.py: |
+    from flask import Flask, render_template
+
+    app = Flask(__name__)
+
+    @app.route('/')
+    def home():
+        return render_template('index.html')
+
+    if __name__ == '__main__':
+        app.run(debug=True)
+requirements.txt: |
+  flask==2.0.1
+  Werkzeug==2.0.1
+README.md: |
+  # Web Application
+
+  A simple Flask web application.
+
+  ## Setup
+
+  ```bash
+  pip install -r requirements.txt
+  python app/app.py
+  ```
+logs:
+  server.log:
+    content: |
+      # Server log initialized
+      # This log file will be appended to if it exists
+    mode: a

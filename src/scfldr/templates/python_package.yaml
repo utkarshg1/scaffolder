@@ -1,0 +1,46 @@
+mypackage:
+  __init__.py: |
+    # My Package
+    __version__ = '0.1.0'
+  core.py: |
+    def main():
+        print("Package functionality here")
+tests:
+  __init__.py: ""
+  test_core.py: |
+    import unittest
+    from mypackage.core import main
+
+    class TestCore(unittest.TestCase):
+        def test_main(self):
+            # Add your test here
+            pass
+setup.py: |
+  from setuptools import setup, find_packages
+
+  setup(
+      name="mypackage",
+      version="0.1.0",
+      packages=find_packages(),
+      install_requires=[
+          # dependencies here
+      ],
+  )
+README.md: |
+  # My Package
+
+  A Python package template.
+
+  ## Installation
+
+  ```bash
+  pip install .
+  ```
+CHANGELOG.md:
+  content: |
+    # Changelog
+
+    ## v0.1.0 - YYYY-MM-DD
+
+    * Initial release
+  mode: a

@@ -7,159 +7,125 @@ from rich.tree import Tree
 import aiofiles
 from typing import Dict, Any
 import sys
+import importlib.metadata
 
 # Initialize console for rich output
 console = Console()
 
-# Predefined template examples
-EXAMPLE_TEMPLATES = {
-    "basic": {
-        "src": {
-            "main.py": {
-                "content": """def main():
-    print("Hello, world!")
+# Define the available template types based on the files in the templates folder
+EXAMPLE_TEMPLATE_TYPES = ["basic", "web", "python_package"]
 
-if __name__ == "__main__":
-    main()""",
-                "mode": "w",
-            },
-            "utils": {
-                "helpers.py": """def add(a, b):
-    return a + b"""
-            },
-        },
-        "docs": {
-            "README.md": """# My Project
 
-This is a sample project."""
-        },
-        "tests": {
-            "test_main.py": """def test_sample():
-    assert True"""
-        },
-        "logs": {
-            "app.log": {
-                "content": """# Log file initialized
-# Append mode example
-""",
-                "mode": "a",
-            }
-        },
-    },
-    "web": {
-        "app": {
-            "static": {
-                "css": {
-                    "style.css": """body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 20px;
-}"""
-                },
-                "js": {
-                    "main.js": """document.addEventListener('DOMContentLoaded', function() {
-    console.log('Page loaded');
-});"""
-                },
-            },
-            "templates": {
-                "index.html": """<!DOCTYPE html>
-<html>
-<head>
-    <title>My Web App</title>
-    <link rel="stylesheet" href="/static/css/style.css">
-</head>
-<body>
-    <h1>Hello, World!</h1>
-    <script src="/static/js/main.js"></script>
-</body>
-</html>"""
-            },
-            "app.py": """from flask import Flask, render_template
+def get_literal_style_dumper():
+    """
+    Returns a YAML dumper configured for human-readable output.
 
-app = Flask(__name__)
+    This dumper will format multiline strings using literal style (|)
+    to preserve formatting and make YAML templates more readable.
 
-@app.route('/')
-def home():
-    return render_template('index.html')
+    Returns:
+        A configured YAML dumper class
+    """
 
-if __name__ == '__main__':
-    app.run(debug=True)""",
-        },
-        "requirements.txt": """flask==2.0.1
-Werkzeug==2.0.1""",
-        "README.md": """# Web Application
+    class LiteralStyleDumper(yaml.SafeDumper):
+        pass
 
-A simple Flask web application.
+    # Represent multiline strings with literal style (|) to preserve formatting
+    def represent_str_literal(dumper, data):
+        if "\n" in data:
+            # Use literal style for multiline strings
+            return dumper.represent_scalar("tag:yaml.org,2002:str", data, style="|")
+        return dumper.represent_scalar("tag:yaml.org,2002:str", data)
 
-## Setup
+    LiteralStyleDumper.add_representer(str, represent_str_literal)
+    return LiteralStyleDumper
 
-```bash
-pip install -r requirements.txt
-python app/app.py
-```""",
-        "logs": {
-            "server.log": {
-                "content": """# Server log initialized
-# This log file will be appended to if it exists
-""",
-                "mode": "a",
-            }
-        },
-    },
-    "python_package": {
-        "mypackage": {
-            "__init__.py": """# My Package
-__version__ = '0.1.0'""",
-            "core.py": """def main():
-    print("Package functionality here")""",
-        },
-        "tests": {
-            "__init__.py": "",
-            "test_core.py": """import unittest
-from mypackage.core import main
 
-class TestCore(unittest.TestCase):
-    def test_main(self):
-        # Add your test here
-        pass""",
-        },
-        "setup.py": """from setuptools import setup, find_packages
+def load_template_from_file(template_name: str) -> Dict[str, Any]:
+    """
+    Load a YAML template from the templates folder.
 
-setup(
-    name="mypackage",
-    version="0.1.0",
-    packages=find_packages(),
-    install_requires=[
-        # dependencies here
-    ],
-)""",
-        "README.md": """# My Package
+    Args:
+        template_name: Name of the template (e.g., 'basic', 'web', 'python_package')
 
-A Python package template.
+    Returns:
+        Dictionary containing the parsed YAML structure
 
-## Installation
+    Raises:
+        FileNotFoundError: If the template file doesn't exist
+        yaml.YAMLError: If the YAML format is invalid
+    """
+    template_path = Path("src/scfldr/templates") / f"{template_name}.yaml"
 
-```bash
-pip install .
-```""",
-        "CHANGELOG.md": {
-            "content": """# Changelog
+    if not template_path.exists():
+        console.print(
+            f"[bold red]Error:[/] Template '{template_name}' not found in templates folder."
+        )
+        sys.exit(1)
 
-## v0.1.0 - YYYY-MM-DD
+    try:
+        with open(template_path, "r", encoding="utf-8") as file:
+            template = yaml.safe_load(file)
+            if not isinstance(template, dict):
+                raise ValueError("Template must be a dictionary/object")
+            return template
+    except yaml.YAMLError as e:
+        console.print(
+            f"[bold red]Error:[/] Invalid YAML format in {template_path}: {e}"
+        )
+        sys.exit(1)
+    except Exception as e:
+        console.print(
+            f"[bold red]Error:[/] Failed to load template from {template_path}: {e}"
+        )
+        sys.exit(1)
 
-* Initial release
-""",
-            "mode": "a",
-        },
-    },
-}
 
 # Initialize Typer app
 app = typer.Typer(
     help="Generate folder/file structure from a YAML template. "
     "Files can be created in write mode (default) or append mode."
 )
+
+
+def version_callback(value: bool):
+    """
+    Display the version of the CLI tool and exit.
+
+    Args:
+        value: Boolean flag indicating if version should be displayed
+    """
+    if value:
+        try:
+            version = importlib.metadata.version("scfldr")
+            console.print(f"scfldr version: [bold green]{version}[/]")
+            raise typer.Exit()
+        except importlib.metadata.PackageNotFoundError:
+            console.print("[bold yellow]Warning:[/] Version information not available")
+            raise typer.Exit(1)
+
+
+# Add version option to the app
+app = typer.Typer(
+    help="Generate folder/file structure from a YAML template. "
+    "Files can be created in write mode (default) or append mode."
+)
+
+
+@app.callback()
+def main(
+    version: bool = typer.Option(
+        False,
+        "--version",
+        "-V",
+        callback=version_callback,
+        help="Show version and exit.",
+    ),
+):
+    """
+    Main callback for the application.
+    """
+    pass
 
 
 def load_template(path: Path) -> Dict[str, Any]:
@@ -222,7 +188,7 @@ async def create_entity(base: Path, name: str, content: Any) -> None:
                 file_mode = "w"
 
             async with aiofiles.open(target, file_mode, encoding="utf-8") as file:
-                await file.write(file_content)
+                await file.write(str(file_content))
 
             mode_desc = "Appended to" if file_mode == "a" else "Created"
             console.print(f"[green]{mode_desc} file:[/] {target}")
@@ -242,9 +208,10 @@ async def create_entity(base: Path, name: str, content: Any) -> None:
             # Handle file with content (traditional way)
             parent = target.parent
             parent.mkdir(parents=True, exist_ok=True)
+
             text = content or ""
             async with aiofiles.open(target, "w", encoding="utf-8") as file:
-                await file.write(text)
+                await file.write(str(text))
             console.print(f"[green]Created file:[/] {target}")
 
         else:
@@ -279,7 +246,7 @@ async def generate(template_path: Path, output: Path) -> None:
     await asyncio.gather(*tasks)
 
 
-def display_tree(path: Path, parent: Tree = None) -> Tree:
+def display_tree(path: Path, parent: Tree | None = None) -> Tree:
     """
     Generate a rich Tree representation of the directory structure.
 
@@ -311,9 +278,11 @@ def display_tree(path: Path, parent: Tree = None) -> Tree:
 @app.command()
 def generate_structure(
     template: Path = typer.Option(
-        Path("template.yaml"), help="Path to the YAML template."
+        Path("template.yaml"), "--template", "-t", help="Path to the YAML template."
     ),
-    output: Path = typer.Option(Path("."), help="Output directory root."),
+    output: Path = typer.Option(
+        Path("."), "--output", "-o", help="Output directory root."
+    ),
     force: bool = typer.Option(
         False, "--force", "-f", help="Overwrite existing output directory if it exists."
     ),
@@ -370,7 +339,9 @@ def generate_structure(
         return 1
 
 
-def preview_tree(path: Path, template: Dict[str, Any], parent: Tree = None) -> Tree:
+def preview_tree(
+    path: Path, template: Dict[str, Any], parent: Tree | None = None
+) -> Tree:
     """
     Recursively preview the directory structure as a tree from a template.
 
@@ -400,7 +371,7 @@ def preview_tree(path: Path, template: Dict[str, Any], parent: Tree = None) -> T
 @app.command()
 def show_structure(
     template: Path = typer.Option(
-        Path("template.yaml"), help="Path to the YAML template."
+        Path("template.yaml"), "--template", "-t", help="Path to the YAML template."
     ),
 ):
     """
@@ -424,45 +395,61 @@ def create_template_file(
         help="Name of the template to create (e.g., 'basic', 'web', 'python_package')",
     ),
     output_path: Path = typer.Option(
-        Path("template.yaml"), help="Output path for the YAML template file."
+        Path("template.yaml"),
+        "--output-path",
+        "-o",
+        help="Output path for the YAML template file.",
+    ),
+    print_raw: bool = typer.Option(
+        False,
+        "--print-raw",
+        "-p",
+        help="Print raw template content to terminal for easy copying",
     ),
 ):
     """
-    Create a YAML template file from predefined examples.
+    Create a YAML template file from predefined examples stored in the templates folder.
 
     Args:
         template_name: Name of the template to create
         output_path: Output path for the YAML template file
+        print_raw: Whether to print the raw template content to terminal
     """
     template_name = template_name.lower()
 
-    if template_name not in EXAMPLE_TEMPLATES:
-        console.print(f"[bold red]Error:[/] Template '{template_name}' not found.")
-        console.print(f"Available templates: {', '.join(EXAMPLE_TEMPLATES.keys())}")
-        raise typer.Exit(code=1)
+    # Load the template from the templates folder
+    template_content = load_template_from_file(template_name)
 
-    # Convert the template to YAML format with better formatting
-    template_content = yaml.dump(
-        EXAMPLE_TEMPLATES[template_name],
-        sort_keys=False,
-        default_style=None,
-        default_flow_style=False,
-        indent=2,
-        width=80,
-        allow_unicode=True,
-    )
-
-    # Write to the output file
+    # Write to the output file with improved formatting
     with open(output_path, "w", encoding="utf-8") as file:
-        file.write(template_content)
+        yaml.dump(
+            template_content,
+            file,
+            Dumper=get_literal_style_dumper(),
+            sort_keys=False,
+            default_flow_style=False,
+            indent=2,
+            width=80,
+            allow_unicode=True,
+        )
 
     console.print(f"[bold green]Template file created:[/] {output_path}")
+
+    # Print raw template for copying if requested
+    if print_raw:
+        console.print("\n[bold]Raw template content for copying:[/]")
+        with open(output_path, "r", encoding="utf-8") as file:
+            raw_content = file.read()
+        console.print(raw_content)
 
 
 @app.command()
 def create_example(
     output: Path = typer.Option(
-        Path("template.yaml"), help="Path to save the example template."
+        Path("template.yaml"),
+        "--output",
+        "-o",
+        help="Path to save the example template.",
     ),
     template_type: str = typer.Option(
         "basic",
@@ -473,6 +460,12 @@ def create_example(
     force: bool = typer.Option(
         False, "--force", "-f", help="Overwrite existing file if it exists."
     ),
+    print_raw: bool = typer.Option(
+        False,
+        "--print-raw",
+        "-p",
+        help="Print raw template content to terminal for easy copying",
+    ),
 ):
     """
     Generate an example YAML template file.
@@ -481,29 +474,30 @@ def create_example(
         output: Path where to save the example template
         template_type: Type of template to generate (basic, web, python_package)
         force: Whether to overwrite the output file if it exists
+        print_raw: Whether to print the raw template content to terminal
     """
     # Check if output file exists
     if output.exists() and not force:
         console.print(f"[bold yellow]Warning:[/] Output file {output} already exists.")
         if not typer.confirm("Overwrite existing file?"):
             console.print("Operation cancelled.")
-            return
-
-    # Check if selected template type exists
-    if template_type not in EXAMPLE_TEMPLATES:
+            return  # Check if selected template type exists
+    if template_type not in EXAMPLE_TEMPLATE_TYPES:
         console.print(
             f"[bold red]Error:[/] Unknown template type: {template_type}. "
-            f"Available types: {', '.join(EXAMPLE_TEMPLATES.keys())}"
+            f"Available types: {', '.join(EXAMPLE_TEMPLATE_TYPES)}"
         )
         return 1
 
-    # Get the template content
-    template_content = EXAMPLE_TEMPLATES[template_type]  # Write to file
+    # Get the template content by loading it from file
+    template_content = load_template_from_file(template_type)
+
     try:
         with open(output, "w", encoding="utf-8") as file:
             yaml.dump(
                 template_content,
                 file,
+                Dumper=get_literal_style_dumper(),
                 default_flow_style=False,
                 sort_keys=False,
                 indent=2,
@@ -515,9 +509,17 @@ def create_example(
             f"[bold green]Success![/] Example template generated at: {output.resolve()}"
         )
 
-        # Preview the template        console.print("\n[bold]Template structure preview:[/]")
+        # Preview the template
+        console.print("\n[bold]Template structure preview:[/]")
         tree = preview_tree(Path("."), template_content)
         console.print(tree)
+
+        # Print raw template for copying if requested
+        if print_raw:
+            console.print("\n[bold]Raw template content for copying:[/]")
+            with open(output, "r", encoding="utf-8") as file:
+                raw_content = file.read()
+            console.print(raw_content)
 
         console.print(f"\nUse it with: [bold]scfldr generate-structure[/]")
 
